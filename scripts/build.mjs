@@ -2,6 +2,7 @@
 import { fileURLToPath } from 'node:url';
 import { content } from '../src/content.mjs';
 import config from '../src/site.config.mjs';
+const siteUrl = process.env.SITE_URL || config.siteUrl;
 const root = fileURLToPath(new URL('../', import.meta.url));
 const out = new URL('../dist/', import.meta.url);
 // Only remove our generated output, never source or a user-selected path.
@@ -9,18 +10,18 @@ await rm(out, { recursive: true, force: true });
 await mkdir(new URL('assets/', out), { recursive: true });
 const esc = (s) => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 if(config.contactEndpoint && new URL(config.contactEndpoint).protocol !== 'https:') throw new Error('Contact endpoint must use HTTPS.');
-if(config.siteUrl && new URL(config.siteUrl).protocol !== 'https:') throw new Error('Site URL must use HTTPS.');
-if(config.indexable && !config.siteUrl) throw new Error('Set the canonical siteUrl before enabling indexing.');
+if(siteUrl && new URL(siteUrl).protocol !== 'https:') throw new Error('Site URL must use HTTPS.');
+if(config.indexable && !siteUrl) throw new Error('Set the canonical siteUrl before enabling indexing.');
 function page(c, isContact) {
  const path = isContact ? c.contact : c.home;
  const depth = path.split('/').filter(Boolean).length;
  const base = depth ? '../'.repeat(depth) : './';
  const link = p => base + p;
  const title = isContact ? `${c.lang === 'es' ? 'Contacto' : 'Contact'} | PM Consultores` : c.title;
- const canonical = config.siteUrl ? new URL(path, config.siteUrl.replace(/\/?$/, '/')).href : '';
+ const canonical = siteUrl ? new URL(path, siteUrl.replace(/\/?$/, '/')).href : '';
  const brand = `<a class="brand" href="${link(c.home)}" aria-label="PM Consultores"><span class="brand-mark" aria-hidden="true">pm<span>·</span></span><span>PM <b>Consultores</b><small>DIGITAL & CONSULTING</small></span></a>`;
  return `<!doctype html>
-<html lang="${c.lang}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${esc(title)}</title><meta name="description" content="${esc(c.description)}"><meta name="robots" content="${config.indexable ? 'index,follow' : 'noindex,nofollow'}"><meta name="theme-color" content="#101d35"><meta property="og:type" content="website"><meta property="og:title" content="${esc(title)}"><meta property="og:description" content="${esc(c.description)}"><meta property="og:locale" content="${c.locale}">${canonical ? `<link rel="canonical" href="${esc(canonical)}"><meta property="og:url" content="${esc(canonical)}">` : ''}${config.siteUrl ? Object.values(content).map(v => `<link rel="alternate" hreflang="${v.lang}" href="${esc(new URL(isContact ? v.contact : v.home, config.siteUrl.replace(/\/?$/, '/')).href)}">`).join('') : ''}<link rel="icon" href="${base}assets/favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="${base}assets/style.css"><script src="${base}assets/app.js" defer></script></head>
+<html lang="${c.lang}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${esc(title)}</title><meta name="description" content="${esc(c.description)}"><meta name="robots" content="${config.indexable ? 'index,follow' : 'noindex,nofollow'}"><meta name="theme-color" content="#101d35"><meta property="og:type" content="website"><meta property="og:title" content="${esc(title)}"><meta property="og:description" content="${esc(c.description)}"><meta property="og:locale" content="${c.locale}">${canonical ? `<link rel="canonical" href="${esc(canonical)}"><meta property="og:url" content="${esc(canonical)}">` : ''}${siteUrl ? Object.values(content).map(v => `<link rel="alternate" hreflang="${v.lang}" href="${esc(new URL(isContact ? v.contact : v.home, siteUrl.replace(/\/?$/, '/')).href)}">`).join('') : ''}<link rel="icon" href="${base}assets/favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="${base}assets/style.css"><script src="${base}assets/app.js" defer></script></head>
 <body><a class="skip" href="#main">${c.skip}</a><header class="header"><div class="wrap header-inner">${brand}<nav aria-label="${c.lang === 'es' ? 'Navegación principal' : 'Main navigation'}"><a href="${link(c.home)}#servicios">${c.nav[0]}</a><a href="${link(c.home)}#soluciones">${c.nav[1]}</a><a href="${link(c.home)}#metodo">${c.nav[2]}</a></nav><div class="header-actions"><a class="language" href="${link(isContact ? c.otherContact : c.otherHome)}" lang="${c.lang === 'es' ? 'en' : 'es'}" hreflang="${c.lang === 'es' ? 'en' : 'es'}" aria-label="${c.other}"><span ${c.lang === 'es' ? 'class="current"' : ''}>ES</span><span class="lang-divider">/</span><span ${c.lang === 'en' ? 'class="current"' : ''}>EN</span></a><a class="button small" href="${link(c.contact)}">${c.nav[3]} <span aria-hidden="true">↗</span></a></div></div></header>
 <main id="main">${isContact ? contact(c,link) : home(c,link)}</main>
 <footer><div class="wrap footer-top">${brand}<p>${c.footer}</p><a href="${link(c.contact)}">${c.nav[3]} ↗</a></div><div class="wrap footer-bottom"><span>© ${new Date().getUTCFullYear()} ${c.rights}</span><span class="draft"><i></i>${c.draft}</span></div></footer></body></html>`;
@@ -39,9 +40,9 @@ function contact(c,link) {
 }
 for (const c of Object.values(content)) for (const contact of [false,true]) {const dir = new URL(contact?c.contact:c.home,out);await mkdir(dir,{recursive:true});await writeFile(new URL('index.html',dir),page(c,contact));}
 for (const file of ['style.css','app.js','favicon.svg']) await copyFile(new URL('../src/'+file,import.meta.url), new URL('assets/'+file,out));
-await writeFile(new URL('robots.txt',out), config.indexable ? `User-agent: *\nAllow: /\nSitemap: ${config.siteUrl.replace(/\/$/,'')}/sitemap.xml\n` : 'User-agent: *\nDisallow: /\n');
-if(config.siteUrl) await writeFile(new URL('sitemap.xml',out),`<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">${Object.values(content).flatMap(c=>[c.home,c.contact]).map(p=>`<url><loc>${esc(new URL(p,config.siteUrl.replace(/\/?$/,'/')).href)}</loc></url>`).join('')}</urlset>`);
+await writeFile(new URL('robots.txt',out), config.indexable ? `User-agent: *\nAllow: /\nSitemap: ${siteUrl.replace(/\/$/,'')}/sitemap.xml\n` : 'User-agent: *\nDisallow: /\n');
+if(siteUrl) await writeFile(new URL('sitemap.xml',out),`<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">${Object.values(content).flatMap(c=>[c.home,c.contact]).map(p=>`<url><loc>${esc(new URL(p,siteUrl.replace(/\/?$/,'/')).href)}</loc></url>`).join('')}</urlset>`);
 await writeFile(new URL('.nojekyll',out),'');
 await writeFile(new URL('_headers',out),'/*\n  X-Content-Type-Options: nosniff\n  Referrer-Policy: strict-origin-when-cross-origin\n  Permissions-Policy: camera=(), microphone=(), geolocation=()\n');
-await writeFile(new URL('404.html',out),'<!doctype html><html lang="es"><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>404 | PM Consultores</title><body style="font:1.2rem system-ui;padding:10%;background:#f6f8fc;color:#172033"><h1>404</h1><p>Página no encontrada / Page not found</p><a href="/">PM Consultores →</a></body></html>');
+await writeFile(new URL('404.html',out),'<!doctype html><html lang="es"><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>404 | PM Consultores</title><body style="font:1.2rem system-ui;padding:10%;background:#f6f8fc;color:#172033"><h1>404</h1><p>Página no encontrada / Page not found</p><a href="'+esc(siteUrl ? new URL(siteUrl).pathname.replace(/\/?$/, '/') : '/')+'">PM Consultores →</a></body></html>');
 console.log('Built 4 bilingual pages in '+root+'dist');

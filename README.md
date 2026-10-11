@@ -38,7 +38,7 @@ The handler must validate and bound inputs, require consent, reject header injec
 
 Keep source in a private GitHub repository; use Cloudflare Pages for the static output. Build command: `npm run build`; output directory: `dist`; Node version: 24 (or another supported version >=22). No database or paid app server is required for this presentation.
 
-GitHub Pages can serve the generated HTML, but review its restrictions on commercial hosting and your plan's repository visibility requirements before choosing it. The site itself has no checkout: e-commerce is an offered service. All asset links are relative, so normal pages also work under a repository prefix; the generic 404 home link assumes domain-root hosting.
+GitHub Pages can serve the generated HTML, but review its restrictions on commercial hosting and your plan's repository visibility requirements before choosing it. The site itself has no checkout: e-commerce is an offered service. All asset links are relative, so normal pages also work under a repository prefix; the 404 home link uses the configured deployment base path.
 
 Official references:
 - https://developers.cloudflare.com/pages/framework-guides/deploy-anything/
@@ -50,3 +50,9 @@ Official references:
 The default `indexable: false` emits noindex metadata and a disallowing robots.txt. This reduces search indexing; it does **not** restrict access. Keep previews local or use hosting access controls for confidential drafts. Set the final HTTPS `siteUrl` and `indexable: true` at launch to generate canonical URLs, language alternates and a sitemap. The visible development label is in each language's `draft` copy; remove its rendering at launch.
 
 See `docs/launch-checklist.md` for the one-week work plan. The reference PDF stays outside the repository.
+
+## GitHub Pages preview
+
+The requested preview host is GitHub Pages. `.github/workflows/pages.yml` builds and deploys `dist/` on pushes to `main`, or on manual dispatch. Enable Pages with GitHub Actions as the source. The workflow supplies the actual Pages base URL using `SITE_URL`, so canonical links, language alternates and the 404 home link account for the repository prefix. No dependency installation is needed because the build only uses Node built-ins.
+
+The draft remains noindex, publicly accessible when deployed. Contact sending stays disabled. GitHub Free requires a public repository for Pages; eligible paid plans can keep source private. Do not change repository visibility without checking the owner’s preference.
