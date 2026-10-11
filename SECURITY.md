@@ -4,7 +4,7 @@ This site is a static, public presentation. It has no login, database, uploaded 
 
 ## Browser protections
 
-Every HTML page, including the 404 page, supplies a Content Security Policy through a meta tag. It blocks inline scripts and styles, dynamic evaluation, plugins, base URL changes and native form submissions. Fetch connections are blocked while contact is pending; a future configured HTTPS contact origin is the only permitted connect destination. CSS and JavaScript carry generated SHA-384 integrity checks. No trackers or external scripts are loaded. Referrer data is suppressed.
+Every HTML page, including the 404 page, supplies a Content Security Policy through a meta tag. It blocks inline scripts and styles, dynamic evaluation, plugins, base URL changes and native form submissions. Fetch connections are blocked while contact is pending; a future configured HTTPS contact origin is the only permitted connect destination. CSS and JavaScript carry generated SHA-384 integrity checks and content-based filenames so browser caches cannot mix old assets with a new page. No trackers or external scripts are loaded. Referrer data is suppressed.
 
 GitHub Pages enforces HTTPS and supplies HSTS. It does **not** apply `_headers`; that file is for a future compatible host. Meta CSP cannot enforce `frame-ancestors`, and Pages does not let this project set arbitrary response headers such as X-Frame-Options, Permissions-Policy or X-Content-Type-Options. The current site cannot promise complete framing protection. Move to a host/proxy with configurable headers if stronger framing or header controls are required. No sensitive authenticated interface exists here.
 

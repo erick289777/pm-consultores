@@ -4,6 +4,12 @@ import {readFile,readdir} from 'node:fs/promises';
 import config from '../src/site.config.mjs';
 const root=new URL('../',import.meta.url);
 const read=path=>readFile(new URL(path,root),'utf8');
+const assetFiles = {};
+for(const file of ['style.css','app.js']) {
+ const [name,ext] = file.split('.');
+ const bytes = await readFile(new URL('src/'+file,root));
+ assetFiles[file]=name+'.'+createHash('sha256').update(bytes).digest('hex').slice(0,16)+'.'+ext;
+}
 const pages=['index.html','en/index.html','contacto/index.html','en/contact/index.html','404.html'];
 for(const file of pages){
  const html=await read('dist/'+file);
@@ -16,10 +22,10 @@ for(const file of pages){
  assert(html.includes('<meta name="referrer" content="no-referrer">'));
  assert(!/\sstyle\s*=|\son[a-z]+\s*=/i.test(html),`${file}: inline style/event handler`);
  for(const script of html.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script>/g)){
-  assert(/src="(?:\.\.\/|\.\/)*assets\/app.js"/.test(script[1]));assert.equal(script[2],'');
+  assert(/src="(?:\.\.\/|\.\/)*assets\/app\.[0-9a-f]{16}\.js"/.test(script[1]));assert.equal(script[2],'');
  }
  for(const name of ['style.css',...(file==='404.html'?[]:['app.js'])]){
-  const hash='sha384-'+createHash('sha384').update(await readFile(new URL('dist/assets/'+name,root))).digest('base64');
+  const hash='sha384-'+createHash('sha384').update(await readFile(new URL('dist/assets/'+assetFiles[name],root))).digest('base64');
   assert(html.includes('integrity="'+hash+'"'),`${file}: invalid integrity for ${name}`);
  }
  if(file.includes('contact')&&!config.contactEndpoint){assert(html.includes('data-endpoint=""'));assert(html.includes('disabled aria-describedby="contact-pending"'));}
@@ -32,7 +38,7 @@ async function files(dir,prefix=''){
   if(item.isDirectory())result.push(...await files(new URL(item.name+'/',dir),path+'/'));else result.push(path);
  }return result;
 }
-const allowed=new Set([...pages,'assets/style.css','assets/app.js','assets/favicon.svg','robots.txt','sitemap.xml','.nojekyll','_headers']);
+const allowed=new Set([...pages,'assets/'+assetFiles['style.css'],'assets/'+assetFiles['app.js'],'assets/favicon.svg','robots.txt','sitemap.xml','.nojekyll','_headers']);
 for(const path of await files(new URL('dist/',root)))assert(allowed.has(path),'Unexpected public artifact: '+path);
 const workflow=await read('.github/workflows/pages.yml');
 const uses=[...workflow.matchAll(/uses:\s*([^\s]+)/g)];assert.equal(uses.length,5);
