@@ -56,3 +56,7 @@ See `docs/launch-checklist.md` for the one-week work plan. The reference PDF sta
 The requested preview host is GitHub Pages. `.github/workflows/pages.yml` builds and deploys `dist/` on pushes to `main`, or on manual dispatch. Enable Pages with GitHub Actions as the source. The workflow supplies the actual Pages base URL using `SITE_URL`, so canonical links, language alternates and the 404 home link account for the repository prefix. No dependency installation is needed because the build only uses Node built-ins.
 
 The draft remains noindex, publicly accessible when deployed. Contact sending stays disabled. GitHub Free requires a public repository for Pages; eligible paid plans can keep source private. Do not change repository visibility without checking the owner’s preference.
+
+## Security
+
+Read SECURITY.md for the static-site protections, GitHub Pages header limitations, account protection and email-backend requirements. Run npm.cmd run build followed by npm.cmd run check:security before publication.
